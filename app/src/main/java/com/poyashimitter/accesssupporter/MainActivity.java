@@ -22,18 +22,12 @@ import com.poyashimitter.accesssupporter.Setting.SettingActivity;
 
 import org.opencv.android.OpenCVLoader;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 	Button notification;
 	Button launchEkimemo;
 	Button displayMap;
-	
-	//Button connect_adb;
-	//Button reset_adb_server;
 	
 	TextView textView;
 	BroadcastReceiver eventReceiver;
@@ -133,34 +127,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 				}
 				break;
 			case R.id.displayMap:
-				/*try{
-					takeScreenshot();
-				}catch(IOException e){
-					e.printStackTrace();
-				}*/
 				break;
 		}
 		Log.d("AccessSupporter","onclick");
-		
-	}
-	
-	public void takeScreenshot() throws IOException {
-		String command="adb shell screencap "+"/sdcard/com.poyashimitter.accesssupporter/screenshot.png";
-		Process process=Runtime.getRuntime().exec(command+" 2>&1");
-		int i=1111;
-		
-		BufferedReader is=new BufferedReader(new InputStreamReader(process.getInputStream()));
-		String br;
-		StringBuffer sb=new StringBuffer();
-		while((br=is.readLine())!=null){
-			sb.append(br+"\n");
-		}
-		try{
-			i=process.waitFor();
-		}catch(InterruptedException e){
-			e.printStackTrace();
-		}
-		Log.d("accessspporter","command = "+command+" , i="+i+"\n"+sb);
 		
 	}
 	

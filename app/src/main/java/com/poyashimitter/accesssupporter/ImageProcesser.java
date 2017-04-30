@@ -26,9 +26,6 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by Tatu on 2017/04/19.
- */
 
 public class ImageProcesser {
 	Context context;
@@ -41,11 +38,6 @@ public class ImageProcesser {
 	DescriptorExtractor descriptorExtractor;
 	DescriptorMatcher matcher;
 	
-	/*
-	static {	//要る？？？
-		System.loadLibrary("opencv_java3");
-	}
-	*/
 	public ImageProcesser(Context context){
 		this.context=context;
 		

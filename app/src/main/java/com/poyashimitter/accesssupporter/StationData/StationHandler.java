@@ -15,15 +15,6 @@ import java.util.Map;
 
 import static java.util.Collections.binarySearch;
 
-/**
- * Created by Tatu on 2016/10/14.
- */
-
-/*
- * 
- * 駅が運用中か判断して、運用中でない駅を除外するのは駅データ.jpでのデータのみ有効。
- * 
- * */
 public class StationHandler {
 	
 	//List<Station> stationList;
@@ -55,11 +46,6 @@ public class StationHandler {
 		}
 	};
 	
-	/*
-	public static int STATUS_IN_OPERATION=0;//運用中
-	public static int STATUS_BEFORE_OPERATION=1;//運用前
-	public static int STATUS_ABOLISHED=2;//廃止;
-	*/
 	private class StationNode{//kd木を用いたデータ構造
 		Station station;
 		
@@ -70,7 +56,6 @@ public class StationHandler {
 		
 		int depth;//使うかどうかわからないけど
 	}
-	
 	
 	
 	/*
@@ -119,29 +104,6 @@ public class StationHandler {
 		root=createStationTree(null,stationList,0);
 		Log.d("AccessSupporter","tree creation time : "+(System.currentTimeMillis()-start)+"ms");
 	}
-	
-	/*
-	public StationHandler(InputStreamReader stationReader,InputStreamReader lineReader){
-		List<Station> stationList=createStationList(stationReader,createLineMap(lineReader));
-		root=createStationTree(null,stationList,0);
-		//printTree(root);
-	}
-	*/
-	private void printTree(StationNode tree){
-		if(tree==null)
-			return;
-		
-		String space="";
-		for(int i=0;i<tree.depth;i++){
-			space+=" - ";
-		}
-		System.out.println(space+tree.station.getStationName());
-		
-		printTree(tree.bigger);
-		printTree(tree.smaller);
-	}
-	
-	
 	
 	private List<Station> createStationList(Reader stationReader,Map<Integer,Line> lineMap){
 		return createStationList(stationReader,lineMap,new ArrayList<Station>(),0);
@@ -261,28 +223,6 @@ public class StationHandler {
 		
 		final List<Station> bigger=list.subList(list.size()/2+1,list.size());
 		
-		/*
-		List<Station> bigger=new ArrayList<Station>(list.size()/2);
-		List<Station> smaller=new ArrayList<Station>(list.size()/2);
-		if(depth%2==0){
-			for(Station sta:list){
-				if(sta.getLongitude()>=node.station.getLongitude()){
-					bigger.add(sta);
-				}else{
-					smaller.add(sta);
-				}
-			}
-		}else{
-			for(Station sta:list){
-				if(sta.getLatitude()>=node.station.getLatitude()){
-					bigger.add(sta);
-				}else{
-					smaller.add(sta);
-				}
-			}
-		}
-		*/
-		
 		if(bigger.size()>2000){
 			Thread t1=new Thread(new Runnable() {
 				@Override
@@ -300,10 +240,6 @@ public class StationHandler {
 			node.bigger=createStationTree(node,bigger,depth+1);
 			node.smaller=createStationTree(node,smaller,depth+1);
 		}
-		/*
-		node.bigger=createStationTree(node,bigger,depth+1);
-		node.smaller=createStationTree(node,smaller,depth+1);
-		*/
 		return node;
 	}
 	
@@ -324,7 +260,6 @@ public class StationHandler {
 			return node;
 		}
 		
-		//System.out.println("getNearestStation : node="+node.station.getStationName());
 		StationNode nearestNode=getField(null,node,longitude,latitude);
 		//近似最近傍のノードが子を持っている場合、そっちをまず探索
 		if(nearestNode.bigger!=null){
@@ -353,7 +288,6 @@ public class StationHandler {
 		//木構造の上から下への探索
 		//tree : いま考えるノード, parent : treeの親ノード
 		if(tree==null){
-			//System.out.println("getField : "+parent.station.getStationName());
 			return parent;
 		}
 		
@@ -378,29 +312,19 @@ public class StationHandler {
 		//木構造を上方向に辿って最近傍の点を見つける
 		//node : いま考えるノード、nearest : 現時点での最近傍、distance : 最近傍との距離,root : 再帰をやめるノード
 		
-		//double d=nearest.station.distanceTo(longitude, latitude);
-		
 		double d;
 		if((d=node.station.distanceTo(longitude, latitude))<distance){
 			nearest=node;
 			distance=d;
-			//System.out.println("searchAbove : nearest changed : "+nearest.station.getStationName());
 		}
 		
 		if(node==root){
-			/*	2017/04/24
-			if((d=node.station.distanceTo(longitude, latitude))<distance){
-				nearest=node;
-				distance=d;
-			}
-			*/
 			return nearest;
 		}
 		
 		StationNode tmp=null;
 		if(node.parent.depth%2==0){
 			double deltaLongitude=toLongitude(distance,latitude);
-			//Log.d("AccessSupporter","distance="+distance+"deltalongitude="+deltaLongitude);
 			if(longitude-deltaLongitude<=node.parent.station.getLongitude()
 					&& node.parent.station.getLongitude()<=longitude+deltaLongitude){
 				//parentの反対側の枝も調べる
@@ -412,7 +336,6 @@ public class StationHandler {
 			}
 		}else{
 			double deltaLatitude=toLatitude(distance);
-			//Log.d("AccessSupporter","distance="+distance+"deltaLatitude="+deltaLatitude);
 			if(latitude-deltaLatitude<=node.parent.station.getLatitude()
 					&& node.parent.station.getLatitude()<=latitude+deltaLatitude){
 				if(node.parent.bigger==node){
@@ -434,7 +357,6 @@ public class StationHandler {
 		//緯度latitudeで、緯度線に沿ってdistanceだけ移動したときの経度の差
 		double r=6371000;//地球の平均半径[m]
 		double rad=2*Math.PI/360;
-		//return distance/(2*Math.PI*r*Math.cos(latitude*rad))*360;
 		return distance/(2*Math.PI*r)*360;
 	}
 	private double toLatitude(double distance){
@@ -446,7 +368,6 @@ public class StationHandler {
 	private Station getSameStation(List<Station> list, int group_code, String name){
 		//listはcompareByIdに従ってソートされているとする
 		
-		//Collections.sort(list,com);
 		Station tmp=new Station();
 		tmp.setStationGroupCode(group_code);
 		tmp.setStationName(name);
@@ -494,11 +415,6 @@ public class StationHandler {
 		try {
 			while((str=reader.readLine())!=null){
 				String[] data=str.split(",");
-				/*
-				//バグるので全部読み込む
-				if(!data[e_status_index].equals("0"))//運用中でない路線は飛ばす
-					continue;
-				*/
 				Line line=new Line();
 				Integer key=Integer.valueOf(data[line_cd_index]);
 				line.setLineCode(key);

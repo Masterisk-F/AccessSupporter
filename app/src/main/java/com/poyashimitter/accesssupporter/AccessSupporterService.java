@@ -37,10 +37,6 @@ import java.util.Calendar;
 
 import static android.location.GpsStatus.GPS_EVENT_SATELLITE_STATUS;
 
-/**
- * Created by Tatu on 2016/10/07.
- */
-
 public class AccessSupporterService extends Service implements LocationListener,GpsStatus.Listener,Runnable{
 	NotificationManager notificationManager;
 	
@@ -119,19 +115,6 @@ public class AccessSupporterService extends Service implements LocationListener,
 		unregisterReceiver(screenActionReceiver);
 	}
 	
-	private void testPreferences(){
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-		
-		Log.d("AccessSupporter","testPreferences!!");
-		
-		
-		Log.d("AccessSupporter","contain_abolished_station:"+prefs.getBoolean("contain_abolished_station",false));
-		Log.d("AccessSupporter","vibration:"+prefs.getString("vibration","when_needed"));
-		Log.d("AccessSupporter","location:"+prefs.getString("location","both"));
-		Log.d("AccessSupporter","min_update_time:"+prefs.getString("min_update_time","50"));
-		
-	}
-	
 	//startService(Intent)で呼び出される
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
@@ -187,7 +170,6 @@ public class AccessSupporterService extends Service implements LocationListener,
 			first.setSmallIcon(R.mipmap.ic_launcher)
 					.setLargeIcon(largeIcon)
 					.setContentTitle("AccessSupporter")
-					//.setContentText("AccessSupporter!!")
 					.setVibrate(new long[]{0,100})
 					.setContentIntent(
 							PendingIntent.getActivity(this,1,new Intent(this,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT)
@@ -264,8 +246,6 @@ public class AccessSupporterService extends Service implements LocationListener,
 		}
 		
 		locationManager.addGpsStatusListener(this);
-		
-		//Log.d("AccessSupporter","startLocationUpdate() finished");
 	}
 
 	void stopLocationUpdate(){//位置情報終了
@@ -377,9 +357,6 @@ public class AccessSupporterService extends Service implements LocationListener,
 			public void run() {
 				synchronized(touchLock){
 					try{
-						//Runtime.getRuntime().exec("adb connect 127.0.0.1").waitFor();
-						//Log.d("AccessSupporter","adb connect finished");
-						
 						SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 						if(prefs.getBoolean("change_denco",false)){
 							Runtime.getRuntime().exec("adb shell input touchscreen tap 700 880");
@@ -494,45 +471,13 @@ public class AccessSupporterService extends Service implements LocationListener,
 		UsageStatsManager stats = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE/*"usagestats"*/);
 		UsageEvents usageEvents = stats.queryEvents(start, end);//usegeEventsのうち後ろにあるほど新しいevent
 		UsageEvents.Event event=null;
-		//Log.d("AccessSupporter","-----stats.queryEvents-----");
+		
 		while (usageEvents.hasNextEvent()) {
 			event = new android.app.usage.UsageEvents.Event();
 			usageEvents.getNextEvent(event);
-			/*
-			long timestamp = event.getTimeStamp();
-			String packageName = event.getPackageName();
-			String className = event.getClassName();
-			int type = event.getEventType();
-			String stype="";
-			if(type==UsageEvents.Event.MOVE_TO_BACKGROUND)
-				stype="MOVE_TO_BACKGROUND";
-			else if(type==UsageEvents.Event.MOVE_TO_FOREGROUND)
-				stype="MOVE_TO_FOREGROUND";
-			
-			//Log.d("AccessSupporter","stats::"+timestamp+", "+packageName+", "+className+", "+stype);
-			*/
 		}
-		//Log.d("AccessSupporter","-----stats.queryEvents end-----");
 		
 		return event;
-		
-		
-		/*
-		//テスト (参考 : http://www.atmarkit.co.jp/ait/articles/1602/01/news156_4.html)
-		List<UsageStats> list = stats.queryUsageStats(UsageStatsManager.INTERVAL_BEST, start, end);
-		String packageName=null;
-		if (list != null && list.size() > 0) {
-			SortedMap<Long, UsageStats> map = new TreeMap<>();
-			for (UsageStats usageStats : list) {
-				map.put(usageStats.getLastTimeUsed(), usageStats);
-			}
-			if (!map.isEmpty()) {
-				packageName = map.get(map.lastKey()).getPackageName();
-			}
-		}
-		Log.d("AccessSupporter","stats.queryUsageStatsによるforeground app : "+packageName);
-		*/
-		
 	}
 	
 	private void sendToActivity(String message){

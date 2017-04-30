@@ -1,8 +1,5 @@
 package com.poyashimitter.accesssupporter.StationData;
 
-/**
- * Created by Tatu on 2016/10/14.
- */
 
 public class Line {
 	
