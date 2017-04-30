@@ -40,6 +40,7 @@ import static android.location.GpsStatus.GPS_EVENT_SATELLITE_STATUS;
 public class AccessSupporterService extends Service implements LocationListener,GpsStatus.Listener,Runnable{
 	NotificationManager notificationManager;
 	
+	
 	LocationManager locationManager;
 	
 	StationHandler stationHandler;
