@@ -3,6 +3,7 @@ package com.poyashimitter.accesssupporter;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Environment;
 import android.util.Log;
 
 import org.opencv.android.Utils;
@@ -19,6 +20,7 @@ import org.opencv.imgproc.Imgproc;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,7 +43,16 @@ public class ImageProcesser {
 	public ImageProcesser(Context context){
 		this.context=context;
 		
-		screenshotPath="/sdcard/"+context.getPackageName()+"/screenshot.png";
+		File screenshotDir=null;
+		try{
+			screenshotDir= new File(Environment.getExternalStorageDirectory(),context.getPackageName());
+			if(!screenshotDir.exists()){
+				screenshotDir.mkdir();
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		screenshotPath=screenshotDir.getAbsolutePath()+"/screenshot.png";
 		
 		featureDetector=FeatureDetector.create(FeatureDetector.ORB);
 		descriptorExtractor=DescriptorExtractor.create(DescriptorExtractor.ORB);
