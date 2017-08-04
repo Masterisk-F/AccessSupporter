@@ -24,12 +24,13 @@ import org.opencv.android.OpenCVLoader;
 
 import java.util.List;
 
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 	Button notification;
 	Button launchEkimemo;
 	Button displayMap;
 	
-	TextView textView;
+	TextView logTextView;
 	BroadcastReceiver eventReceiver;
 	IntentFilter eventFilter;
 	
@@ -70,17 +71,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 		Intent in=new Intent(MainActivity.this,AccessSupporterService.class);
 		startService(in.setAction("activityCreated"));
 		
-		textView=(TextView)findViewById(R.id.textView);
+		logTextView=(TextView)findViewById(R.id.logTextView);
 		
 		
 		//Serviceからのメッセージを受け取るための設定
 		eventReceiver=new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
-				if(textView!=null){
+				if(logTextView!=null){
 					String str=intent.getStringExtra(AccessSupporterService.STATUS_CHANGED);
-					str+="\n"+textView.getText();
-					textView.setText(str);
+					str+="\n"+logTextView.getText();
+					str=str.substring(0,Math.min(str.length(),2000));
+					logTextView.setText(str);
 				}
 			}
 		};
@@ -88,13 +90,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 		eventFilter.addAction(AccessSupporterService.STATUS_CHANGED);
 		registerReceiver(eventReceiver,eventFilter);
 	}
-	/*
-	@Override
-	public void onResume(){
-		super.onResume();
-		
-	}
-	*/
+	
+	
+	
 	@Override
 	protected void onDestroy() {
 		Intent in=new Intent(MainActivity.this,AccessSupporterService.class);
@@ -107,7 +105,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 	public void onClick(View v) {
 		switch(v.getId()){
 			case R.id.notification:
-				textView.setText("");
+				logTextView.setText("");
 				Intent in=new Intent(MainActivity.this,AccessSupporterService.class);
 				if(/*!serviceRunning()*/notification.getText().equals("開始")){
 					startService(in.setAction("start"));

@@ -6,6 +6,8 @@ import android.graphics.BitmapFactory;
 import android.os.Environment;
 import android.util.Log;
 
+import com.cgutman.adblib.AdbStream;
+
 import org.opencv.android.Utils;
 import org.opencv.core.DMatch;
 import org.opencv.core.Mat;
@@ -19,12 +21,10 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,6 +39,8 @@ public class ImageProcesser {
 	FeatureDetector featureDetector;
 	DescriptorExtractor descriptorExtractor;
 	DescriptorMatcher matcher;
+	
+	AdbStream adbStream;
 	
 	public ImageProcesser(Context context){
 		this.context=context;
@@ -59,6 +61,11 @@ public class ImageProcesser {
 		matcher=DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
 		
 		errMatDescriptor=getErrMatDescriptor();
+	}
+	
+	public void setAdbStream(AdbStream stream){
+		//adbstreamは非同期で生成されるため、後から渡す
+		adbStream=stream;
 	}
 	
 	private Mat getErrMat(){
@@ -100,7 +107,7 @@ public class ImageProcesser {
 	}
 	
 	private void takeScreenshot() throws IOException{
-		String command="adb shell screencap "+screenshotPath;
+		/*String command="adb shell screencap "+screenshotPath;
 		Process process=Runtime.getRuntime().exec(command+" 2>&1");
 		int i=1111;
 		
@@ -115,7 +122,12 @@ public class ImageProcesser {
 		}catch(InterruptedException e){
 			e.printStackTrace();
 		}
-		Log.d("accesssupporter","command = "+command+" , i="+i+"\n"+sb);
+		*/
+		try{
+			adbStream.write("screencap "+screenshotPath+"\n");
+			Thread.sleep(2500);
+			Log.d("accesssupporter","command = "+"screencap "+screenshotPath);
+		}catch(InterruptedException e){}
 		
 	}
 	

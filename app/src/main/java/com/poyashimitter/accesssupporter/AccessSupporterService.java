@@ -20,6 +20,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
@@ -28,11 +29,19 @@ import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.cgutman.adblib.AdbBase64;
+import com.cgutman.adblib.AdbConnection;
+import com.cgutman.adblib.AdbCrypto;
+import com.cgutman.adblib.AdbStream;
 import com.poyashimitter.accesssupporter.StationData.Station;
 import com.poyashimitter.accesssupporter.StationData.StationHandler;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Calendar;
 
 import static android.location.GpsStatus.GPS_EVENT_SATELLITE_STATUS;
@@ -44,6 +53,8 @@ public class AccessSupporterService extends Service implements LocationListener,
 	
 	StationHandler stationHandler;
 	
+	
+	SharedPreferences prefs;
 	
 	Bitmap largeIcon;//通知領域を表示した時に出てくるアイコン
 	
@@ -66,6 +77,9 @@ public class AccessSupporterService extends Service implements LocationListener,
 	Thread th;//エラー画面の検出を繰り返し行う
 	
 	ImageProcesser imageProcesser;
+	
+	
+	AdbStream adbStream;//adb接続で使う
 	
 	boolean screenOn=true;
 	BroadcastReceiver screenActionReceiver = new BroadcastReceiver() {
@@ -103,10 +117,16 @@ public class AccessSupporterService extends Service implements LocationListener,
 		
 		largeIcon= BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
 		
+		prefs=PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+		
+		
+		connectAdb();
+		
 		imageProcesser=new ImageProcesser(this);
 		
 		registerReceiver(screenActionReceiver,new IntentFilter(Intent.ACTION_SCREEN_ON));
 		registerReceiver(screenActionReceiver,new IntentFilter(Intent.ACTION_SCREEN_OFF));
+		
 	}
 	
 	@Override
@@ -114,6 +134,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 		super.onDestroy();
 		unregisterReceiver(screenActionReceiver);
 	}
+	
 	
 	//startService(Intent)で呼び出される
 	@Override
@@ -132,8 +153,11 @@ public class AccessSupporterService extends Service implements LocationListener,
 							new InputStreamReader(getAssets().open("abolished_station - 2017-03-20.csv", AssetManager.ACCESS_BUFFER)),
 							new InputStreamReader(getAssets().open("shinkansen.csv")),
 							new InputStreamReader(getAssets().open("abolished_line - 2017-03-19.csv")),
-							PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+							prefs
 									.getBoolean("contain_abolished_station",true));
+					
+					//Applicationに登録
+					((AccessSupporterApplication)getApplication()).setStationHandler(stationHandler);
 				}catch(IOException e){
 					e.printStackTrace();
 					Toast.makeText(this,"ファイルを読み込めません",Toast.LENGTH_SHORT).show();
@@ -191,7 +215,6 @@ public class AccessSupporterService extends Service implements LocationListener,
 		while(th!=null){
 			try{
 				//エラー画面の検出
-				SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 				if(!prefs.getBoolean("err_judge",false)){
 					th=null;
 					break;
@@ -218,7 +241,6 @@ public class AccessSupporterService extends Service implements LocationListener,
 		}
 		
 		
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 		int minUpdateDistance=Integer.valueOf(prefs.getString("min_update_distance","50"));
 		int minUpdateTime=Integer.valueOf(prefs.getString("min_update_time","5"));
 		
@@ -311,7 +333,6 @@ public class AccessSupporterService extends Service implements LocationListener,
 						PendingIntent.getActivity(this,1,new Intent(this,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT)
 				);//.setVibrate(new long[]{0,200,100,200,100,100});
 		
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 		String vibration=prefs.getString("vibration","when_needed");
 		if(vibration.equals("true") || (vibration.equals("when_needed") && !ekimemoIsForeground())){
 			builder.setVibrate(new long[]{0,400,100,400,});
@@ -338,7 +359,10 @@ public class AccessSupporterService extends Service implements LocationListener,
 		Log.d("AccessSupporter","touchToReset() : ekimemoIsError()=true");
 		synchronized(touchLock){
 			try{
-				Runtime.getRuntime().exec("adb shell input touchscreen tap 350 850");
+				//Runtime.getRuntime().exec("adb shell input touchscreen tap 350 850");
+				
+				//座標は要検証
+				adbStream.write("input touchscreen tap 350 850\n");
 				Thread.sleep(17000);
 				
 			}catch(IOException e){
@@ -357,15 +381,14 @@ public class AccessSupporterService extends Service implements LocationListener,
 			public void run() {
 				synchronized(touchLock){
 					try{
-						SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 						if(prefs.getBoolean("change_denco",false)){
-							Runtime.getRuntime().exec("adb shell input touchscreen tap 700 880");
+							adbStream.write("input touchscreen tap 1040 1250\n");
 							Thread.sleep(1000);
 						}
 						
-						Runtime.getRuntime().exec("adb shell input touchscreen tap 650 1200");
+						adbStream.write("input touchscreen tap 1000 1700\n");
 						Thread.sleep(5500);
-						Runtime.getRuntime().exec("adb shell input touchscreen tap 650 1200");
+						adbStream.write("input touchscreen tap 1000 1700\n");
 						Thread.sleep(1000);
 						
 						
@@ -376,7 +399,6 @@ public class AccessSupporterService extends Service implements LocationListener,
 	}
 	
 	private void setIntervalsTouch(){//(設定されていれば)5分毎にタッチ
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 		if(!prefs.getBoolean("five_min_access",false))
 			return;
 		
@@ -395,7 +417,6 @@ public class AccessSupporterService extends Service implements LocationListener,
 					}else{
 						Thread.sleep(305000);
 					}
-					SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 					if(prefs.getBoolean("five_min_access",false)){
 						touchToAccess();
 						setIntervalsTouch();
@@ -483,6 +504,135 @@ public class AccessSupporterService extends Service implements LocationListener,
 	private void sendToActivity(String message){
 		sendBroadcast(new Intent(STATUS_CHANGED).putExtra(STATUS_CHANGED,message));
 	}
+	
+	
+	
+	
+	
+	void connectAdb(){
+		final Handler handler=new Handler();
+		
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				Socket socket;
+				AdbCrypto crypto=null;
+				
+				AdbConnection adb=null;
+				
+				AdbBase64 base64Impl=new AdbBase64() {
+					@Override
+					public String encodeToString(byte[] data) {
+						return android.util.Base64.encodeToString(data, 16);
+					}
+				};
+				
+				try {
+					crypto = AdbCrypto.generateAdbKeyPair(base64Impl);
+					
+				} catch (NoSuchAlgorithmException e) {
+					e.printStackTrace();
+					return;
+				}
+				
+				// Connect the socket to the remote host
+				Log.d("AdbTest","Socket connecting...");
+				try {
+					socket = new Socket("localhost", 5555);
+				} catch (UnknownHostException e) {
+					e.printStackTrace();
+					return;
+				} catch (IOException e) {
+					e.printStackTrace();
+					return;
+				}
+				Log.d("AdbTest","Socket connected");
+				
+				// Construct the AdbConnection object
+				try {
+					adb = AdbConnection.create(socket, crypto);
+				} catch (IOException e) {
+					e.printStackTrace();
+					return;
+				}
+				
+				
+				// Start the application layer connection process
+				Log.d("AdbTest","ADB connecting...");
+				try {
+					adb.connect();
+				} catch (IOException e) {
+					e.printStackTrace();
+					return;
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+					return;
+				}
+				Log.d("AdbTest","ADB connected");
+				
+				// Open the shell stream of ADB
+				try {
+					adbStream = adb.open("shell:");
+				} catch (UnsupportedEncodingException e) {
+					e.printStackTrace();
+					return;
+				} catch (IOException e) {
+					e.printStackTrace();
+					return;
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+					return;
+				}
+				
+				// Start the receiving thread
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						Log.d("AdbTest","receiving thread start");
+						while (!adbStream.isClosed()) {
+							try {
+								// Print each thing we read from the shell stream
+								Log.d("AdbTest",new String(adbStream.read(), "US-ASCII"));
+							} catch (UnsupportedEncodingException e) {
+								e.printStackTrace();
+								return;
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+								return;
+							} catch (IOException e) {
+								e.printStackTrace();
+								return;
+							}
+						}
+					}
+				}).start();
+				
+				
+				//UIスレッド以外からtoastを表示
+				handler.post(new Runnable() {
+					@Override
+					public void run() {
+						Toast.makeText(getApplicationContext(),"adb接続に成功しました",Toast.LENGTH_LONG).show();
+					}
+				});
+				
+				
+				while(true){
+					if(imageProcesser!=null){
+						imageProcesser.setAdbStream(adbStream);
+						break;
+					}
+					try{
+						Thread.sleep(100);
+					}catch(InterruptedException e){}
+				}
+			}
+		}
+		).start();
+	}
+	
+	
+	
 }
 
 
