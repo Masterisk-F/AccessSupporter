@@ -2,12 +2,14 @@ package com.poyashimitter.accesssupporter;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.TabLayout;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -15,25 +17,30 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.poyashimitter.accesssupporter.Setting.SettingActivity;
+import com.poyashimitter.accesssupporter.Tabs.HistoryOfStationsFragment;
+import com.poyashimitter.accesssupporter.Tabs.LogFragment;
+import com.poyashimitter.accesssupporter.Tabs.NearbyStationsFragment;
 
 import org.opencv.android.OpenCVLoader;
 
 import java.util.List;
 
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener{
+public class MainActivity extends AppCompatActivity 
+		implements View.OnClickListener,NearbyStationsFragment.OnFragmentInteractionListener,
+		HistoryOfStationsFragment.OnFragmentInteractionListener,
+		LogFragment.OnFragmentInteractionListener{
 	Button notification;
 	Button launchEkimemo;
 	Button displayMap;
 	
-	TextView logTextView;
+	/*TextView logTextView;
 	BroadcastReceiver eventReceiver;
 	IntentFilter eventFilter;
-	
+	*/
 	
 	
 	static {
@@ -55,6 +62,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 			Log.i("OpenCV", "successfully built !");
 		}
 		
+		setTabAndPager();
+		
 		
 		notification=(Button)findViewById(R.id.notification);
 		if(serviceRunning()){//判定条件これで良い？？
@@ -70,8 +79,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 		
 		Intent in=new Intent(MainActivity.this,AccessSupporterService.class);
 		startService(in.setAction("activityCreated"));
-		
-		logTextView=(TextView)findViewById(R.id.logTextView);
+		/*
+		logTextView=(TextView)findViewById(logTextView);
 		
 		
 		//Serviceからのメッセージを受け取るための設定
@@ -81,23 +90,85 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 				if(logTextView!=null){
 					String str=intent.getStringExtra(AccessSupporterService.STATUS_CHANGED);
 					str+="\n"+logTextView.getText();
-					str=str.substring(0,Math.min(str.length(),2000));
+					str=str.substring(0,Math.min(str.length(),4000));
 					logTextView.setText(str);
 				}
 			}
 		};
 		eventFilter=new IntentFilter();
 		eventFilter.addAction(AccessSupporterService.STATUS_CHANGED);
-		registerReceiver(eventReceiver,eventFilter);
+		registerReceiver(eventReceiver,eventFilter);*/
 	}
 	
 	
+	void setTabAndPager(){
+		final String[] title={"nearby stations","history","log"};
+		
+		TabLayout tabLayout=(TabLayout)findViewById(R.id.tabs);
+		for(int i=0;i<title.length;i++){
+			tabLayout.addTab(tabLayout.newTab());
+		}
+		
+		ViewPager viewPager=(ViewPager)findViewById(R.id.pager);
+		viewPager.setAdapter(new FragmentPagerAdapter(getSupportFragmentManager()) {
+			@Override
+			public Fragment getItem(int position) {
+				Fragment fragment=null;
+				switch(position){
+					case 0:
+						fragment= HistoryOfStationsFragment.newInstance(null,null);
+						break;
+					case 1:
+						fragment= NearbyStationsFragment.newInstance(null,null);
+						break;
+					case 2:
+						fragment= LogFragment.newInstance(null,null);
+						break;
+				}
+				return fragment;
+			}
+			
+			@Override
+			public int getCount() {
+				return title.length;
+			}
+			
+			@Override
+			public CharSequence getPageTitle(int position) {
+				return title[position];
+			}
+		});
+		
+		viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+			@Override
+			public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+				
+			}
+			
+			@Override
+			public void onPageSelected(int position) {
+				
+			}
+			
+			@Override
+			public void onPageScrollStateChanged(int state) {
+				
+			}
+		});
+		tabLayout.setupWithViewPager(viewPager);
+	}
+	
+	
+	@Override
+	public void onFragmentInteraction(Uri uri) {
+		
+	}
 	
 	@Override
 	protected void onDestroy() {
 		Intent in=new Intent(MainActivity.this,AccessSupporterService.class);
 		startService(in.setAction("activityDestroyed"));
-		unregisterReceiver(eventReceiver);
+		//unregisterReceiver(eventReceiver);
 		super.onDestroy();
 	}
 	
@@ -105,7 +176,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 	public void onClick(View v) {
 		switch(v.getId()){
 			case R.id.notification:
-				logTextView.setText("");
+				//logTextView.setText("");
 				Intent in=new Intent(MainActivity.this,AccessSupporterService.class);
 				if(/*!serviceRunning()*/notification.getText().equals("開始")){
 					startService(in.setAction("start"));
@@ -152,7 +223,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 		ActivityManager am = (ActivityManager)this.getSystemService(ACTIVITY_SERVICE);
 		List<RunningServiceInfo> listServiceInfo = am.getRunningServices(Integer.MAX_VALUE);
 		for (RunningServiceInfo curr : listServiceInfo) {
-			//Log.d("AccessSupporter",curr.service.getClassName());
 			// クラス名を比較
 			if (curr.service.getClassName().equals(AccessSupporterService.class.getName())) {
 				// 実行中のサービスと一致

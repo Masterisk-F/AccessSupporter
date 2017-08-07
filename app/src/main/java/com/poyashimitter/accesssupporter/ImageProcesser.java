@@ -107,25 +107,9 @@ public class ImageProcesser {
 	}
 	
 	private void takeScreenshot() throws IOException{
-		/*String command="adb shell screencap "+screenshotPath;
-		Process process=Runtime.getRuntime().exec(command+" 2>&1");
-		int i=1111;
-		
-		BufferedReader is=new BufferedReader(new InputStreamReader(process.getInputStream()));
-		String br;
-		StringBuffer sb=new StringBuffer();
-		while((br=is.readLine())!=null){
-		sb.append(br+"\n");
-		}
-		try{
-			i=process.waitFor();
-		}catch(InterruptedException e){
-			e.printStackTrace();
-		}
-		*/
 		try{
 			adbStream.write("screencap "+screenshotPath+"\n");
-			Thread.sleep(2500);
+			Thread.sleep(3000);
 			Log.d("accesssupporter","command = "+"screencap "+screenshotPath);
 		}catch(InterruptedException e){}
 		

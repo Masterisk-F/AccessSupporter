@@ -71,7 +71,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 	Thread intervalsThread;//5分毎のタッチ処理で使うThreadをここに置いておく(割り込みを使うため)
 	
 	
-	static String STATUS_CHANGED="AccessSupporter.StatusChanged";//Activityにメッセージを送るときのキー
+	public static String STATUS_CHANGED="AccessSupporter.StatusChanged";//Activityにメッセージを送るときのキー
 	
 	
 	Thread th;//エラー画面の検出を繰り返し行う
@@ -133,6 +133,11 @@ public class AccessSupporterService extends Service implements LocationListener,
 	public void onDestroy() {
 		super.onDestroy();
 		unregisterReceiver(screenActionReceiver);
+		try{
+			adbStream.close();
+		}catch(IOException e){
+			e.printStackTrace();
+		}
 	}
 	
 	

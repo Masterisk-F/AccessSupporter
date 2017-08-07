@@ -10,37 +10,82 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.poyashimitter.accesssupporter.MainActivity">
 
-    <Button
-        android:text="開始"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/notification"
-        android:elevation="0dp"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
-
-    <Button
-        android:text="駅メモ！を起動"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/buttons"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:id="@+id/launchEkimemo"/>
+        android:orientation="horizontal"
+        android:clickable="true">
 
-    <Button
-        android:text="地図"
-        android:layout_width="wrap_content"
+        <Button
+            android:id="@+id/notification"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="開始"/>
+
+        <Button
+            android:id="@+id/launchEkimemo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="駅メモ！を起動"/>
+
+        <Button
+            android:id="@+id/displayMap"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="地図"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/tabs_and_pager"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignTop="@+id/notification"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:id="@+id/displayMap" />
+        android:orientation="vertical"
+        android:layout_above="@+id/buttons">
 
+        <android.support.design.widget.TabLayout
+            android:id="@+id/tabs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <android.support.design.widget.TabItem
+                android:id="@+id/nearby_stations"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="nearby stations"/>
+
+            <android.support.design.widget.TabItem
+                android:id="@+id/history"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="history"/>
+
+            <android.support.design.widget.TabItem
+                android:id="@+id/log"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="log"/>
+
+        </android.support.design.widget.TabLayout>
+
+        <android.support.v4.view.ViewPager
+            android:id="@+id/pager"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@+id/tabs"/>
+
+    </LinearLayout>
+
+<!--
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/notification">
+        android:layout_above="@+id/buttons">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -52,7 +97,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="TextView"/>
+
         </LinearLayout>
     </ScrollView>
+-->
 
 </RelativeLayout>
