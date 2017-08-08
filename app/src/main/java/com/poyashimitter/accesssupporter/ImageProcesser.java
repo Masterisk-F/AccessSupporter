@@ -32,9 +32,11 @@ import java.util.List;
 public class ImageProcesser {
 	Context context;
 	
+	File screenshotDir;
 	final String screenshotPath;
 	
 	Mat errMatDescriptor;
+	Mat connErrMatDescriptor;
 	
 	FeatureDetector featureDetector;
 	DescriptorExtractor descriptorExtractor;
@@ -42,10 +44,14 @@ public class ImageProcesser {
 	
 	AdbStream adbStream;
 	
+	
+	public static final int ERROR=1;
+	public static final int CONNECTION_ERROR=2;
+	public static final int NORMAL=0;
+	
 	public ImageProcesser(Context context){
 		this.context=context;
 		
-		File screenshotDir=null;
 		try{
 			screenshotDir= new File(Environment.getExternalStorageDirectory(),context.getPackageName());
 			if(!screenshotDir.exists()){
@@ -61,35 +67,43 @@ public class ImageProcesser {
 		matcher=DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
 		
 		errMatDescriptor=getErrMatDescriptor();
+		connErrMatDescriptor=getConnErrMatDescriptor();
 	}
 	
 	public void setAdbStream(AdbStream stream){
 		//adbstreamは非同期で生成されるため、後から渡す
 		adbStream=stream;
 	}
-	
-	private Mat getErrMat(){
+	private Mat getMatOfImage(InputStream in){
+		Mat mat=new Mat();
+		InputStream stream= new BufferedInputStream(in);
+		Bitmap bitmap= BitmapFactory.decodeStream(stream);
+		Utils.bitmapToMat(bitmap,mat);
+		Log.d("accesssupporter","img loaded : rows="+mat.rows()+", cols="+mat.cols());
 		
-		Mat errMat=new Mat();
-		InputStream stream=null;
 		try{
-			stream= new BufferedInputStream(context.getAssets().open("err.jpeg"));
-			Bitmap bitmap= BitmapFactory.decodeStream(stream);
-			Utils.bitmapToMat(bitmap,errMat);
-			Log.d("accesssupporter","img loaded : rows="+errMat.rows()+", cols="+errMat.cols());
+			stream.close();
 		}catch(IOException e){
 			e.printStackTrace();
-		}finally{
-			if(stream!=null){
-				try{
-					stream.close();
-				}catch(IOException e){
-					e.printStackTrace();
-				}
-			}
 		}
-		
-		return errMat;
+		return mat;
+	}
+	private Mat getErrMat(){
+		try{
+			return getMatOfImage(context.getAssets().open("err.jpeg"));
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	private Mat getConnErrMat(){
+		try{
+			return getMatOfImage(context.getAssets().open("conn_err.png"));
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+		return null;
 	}
 	
 	private Mat getErrMatDescriptor(){
@@ -106,6 +120,20 @@ public class ImageProcesser {
 		return errDescriptor;
 	}
 	
+	private Mat getConnErrMatDescriptor(){
+		if(connErrMatDescriptor!=null){
+			return connErrMatDescriptor;
+		}
+		
+		Mat connErr=new Mat();
+		Imgproc.cvtColor(getConnErrMat(),connErr,Imgproc.COLOR_RGBA2GRAY);
+		MatOfKeyPoint keyPoint=new MatOfKeyPoint();
+		featureDetector.detect(connErr,keyPoint);
+		Mat descriptor=new Mat(connErr.rows(),connErr.cols(),connErr.type());
+		descriptorExtractor.compute(connErr,keyPoint,descriptor);
+		return descriptor;
+	}
+	
 	private void takeScreenshot() throws IOException{
 		try{
 			adbStream.write("screencap "+screenshotPath+"\n");
@@ -116,32 +144,21 @@ public class ImageProcesser {
 	}
 	
 	private Mat getMatOfScreenshot(){
-		InputStream stream=null;
-		Mat mat=new Mat();
 		try{
 			takeScreenshot();
 			
-			stream =new BufferedInputStream(new FileInputStream(screenshotPath));
-			Bitmap bitmap = BitmapFactory.decodeStream(stream);
-			Utils.bitmapToMat(bitmap,mat);
-		}catch(Exception e){
+			return getMatOfImage(new FileInputStream(screenshotPath));
+		}catch(IOException e){
 			e.printStackTrace();
-			return null;
-		}finally{
-			if(stream!=null){
-				try{
-					stream.close();
-				}catch(IOException e){
-					e.printStackTrace();
-				}
-			}
 		}
-		return mat;
+		
+		return null;
 	}
 	
+	//テスト用
 	public void saveMatchesImage(){
 		Mat err=new Mat();
-		Imgproc.cvtColor(getErrMat(),err,Imgproc.COLOR_RGBA2GRAY);
+		Imgproc.cvtColor(getConnErrMat(),err,Imgproc.COLOR_RGBA2GRAY);
 		MatOfKeyPoint errKeyPoint=new MatOfKeyPoint();
 		featureDetector.detect(err,errKeyPoint);
 		Mat errDescriptor=new Mat(err.rows(),err.cols(),err.type());
@@ -161,23 +178,25 @@ public class ImageProcesser {
 		DMatch[] tmp01 = matchs.toArray();
 		List<DMatch> tmp02 = new ArrayList<DMatch>();
 		for (int i=0; i<tmp01.length; i++) {
-			Log.d("accesssupporter","tmp["+i+"].distance = "+tmp01[i].distance);
-			if(tmp01[i].distance<15){
+			if(tmp01[i].distance<25){
 				tmp02.add(tmp01[i]);
 			}
-			//tmp02[i] = tmp01[i];
 		}
 		matchs=new MatOfDMatch();
 		matchs.fromArray(tmp02.toArray(new DMatch[tmp02.size()]));
 		
-		Mat matchedImage=new Mat(/*screen.rows(),err.cols()+screen.cols(),screen.type()*/);
+		Mat matchedImage=new Mat();
 		Features2d.drawMatches(err,errKeyPoint,screen,screenKeyPoint,matchs,matchedImage);
 		
-		Imgcodecs.imwrite("/sdcard/"+context.getPackageName()+"/match.jpg",matchedImage);
+		Imgcodecs.imwrite(screenshotDir.getAbsolutePath()+"/match.jpg",matchedImage);
 		Log.d("accesssupporter","number of matched point : "+tmp02.size());
 	}
 	
-	public boolean ekimemoIsError(){
+	public int ekimemoIsError(){
+		
+		//
+		//saveMatchesImage();
+		
 		Mat screen=new Mat();
 		Imgproc.cvtColor(getMatOfScreenshot(),screen,Imgproc.COLOR_RGBA2GRAY);
 		long start=System.currentTimeMillis();//!!!!!!!!
@@ -188,26 +207,56 @@ public class ImageProcesser {
 		
 		if(screenDescriptor.rows()==0 || screenDescriptor.cols()==0){
 			//スリープ時のスクショだとscreenDescriptorが空でエラーになるため
-			return false;
+			return NORMAL;
 		}
 		
 		MatOfDMatch matches = new MatOfDMatch();
-		Log.d("accesssupporter","errMatDescriptor : "+errMatDescriptor.toString()+"\nscreenDescriptor : "+screenDescriptor.toString());//!!!!!!!!!!!!!!
+		//Log.d("accesssupporter","errMatDescriptor : "+errMatDescriptor.toString()+"\nscreenDescriptor : "+screenDescriptor.toString());//!!!!!!!!!!!!!!
 		try{
 			matcher.match(errMatDescriptor,screenDescriptor,matches);
 		}catch(Exception e){//スリープ時のスクショだとscreenDescriptorが空でエラーになるため
 			e.printStackTrace();
-			return false;
+			return NORMAL;
 		}
 		
 		List<DMatch> dmList = new ArrayList<DMatch>(130);
 		for (DMatch dm : matches.toArray()) {
-			//Log.d("accesssupporter","dm.distance = "+dm.distance);
-			if(dm.distance<15){
+			if(dm.distance<25){
 				dmList.add(dm);
 			}
 		}
 		Log.d("accesssupporter","ekimemoIsError()... image processing time : "+(System.currentTimeMillis()-start)+"ms");
-		return dmList.size()>50;
+		Log.d("accesssupporter","ekimemoIsError()...err:dmList.size()="+dmList.size());
+		
+		if(dmList.size()>50)
+			return ERROR;
+		
+		
+		
+		
+		//conn_Err
+		
+		matches = new MatOfDMatch();
+		try{
+			matcher.match(connErrMatDescriptor,screenDescriptor,matches);
+		}catch(Exception e){//スリープ時のスクショだとscreenDescriptorが空でエラーになるため
+			e.printStackTrace();
+			return NORMAL;
+		}
+		
+		dmList = new ArrayList<DMatch>(130);
+		for (DMatch dm : matches.toArray()) {
+			if(dm.distance<25){
+				dmList.add(dm);
+			}
+		}
+		
+		Log.d("accesssupporter","ekimemoIsError()...conn_err:dmList.size()="+dmList.size());
+		
+		if(dmList.size()>50)
+			return CONNECTION_ERROR;
+		
+		
+		return NORMAL;
 	}
 }

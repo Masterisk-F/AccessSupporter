@@ -358,23 +358,43 @@ public class AccessSupporterService extends Service implements LocationListener,
 	
 	
 	private void touchToReset() throws InterruptedException{
-		if(!screenOn || !ekimemoIsForeground() || !imageProcesser.ekimemoIsError()){
+		if(!screenOn || !ekimemoIsForeground()){
 			return;
 		}
-		Log.d("AccessSupporter","touchToReset() : ekimemoIsError()=true");
-		synchronized(touchLock){
-			try{
-				//Runtime.getRuntime().exec("adb shell input touchscreen tap 350 850");
+		
+		switch(imageProcesser.ekimemoIsError()){
+			case ImageProcesser.ERROR:
+				Log.d("AccessSupporter","touchToReset() : ekimemoIsError()=ImageProcesser.ERROR");
+				synchronized(touchLock){
+					try{
+						//Runtime.getRuntime().exec("adb shell input touchscreen tap 350 850");
+						adbStream.write("input touchscreen tap 550 1170\n");
+						Thread.sleep(17000);
+					}catch(IOException e){
+						e.printStackTrace();
+					}
+				}
+				touchToReset();
 				
-				//座標は要検証
-				adbStream.write("input touchscreen tap 350 850\n");
-				Thread.sleep(17000);
+				break;
+			case ImageProcesser.CONNECTION_ERROR:
+				Log.d("AccessSupporter","touchToReset() : ekimemoIsError()=ImageProcesser.CONNECTION_ERROR");
+				synchronized(touchLock){
+					try{
+						adbStream.write("input touchscreen tap 450 1090\n");
+						Thread.sleep(17000);
+					}catch(IOException e){
+						e.printStackTrace();
+					}
+				}
+				touchToReset();
 				
-			}catch(IOException e){
-				e.printStackTrace();
-			}
+				break;
+			case ImageProcesser.NORMAL:
+				break;
 		}
-		touchToReset();
+		
+		
 	}
 	
 	private void touchToAccess(){
@@ -426,9 +446,11 @@ public class AccessSupporterService extends Service implements LocationListener,
 						touchToAccess();
 						setIntervalsTouch();
 					}
+					/*
 					long start=System.currentTimeMillis();
 					ekimemoIsForeground();
 					Log.d("AccessSupporter","ekimemoIsForeground() time : "+(System.currentTimeMillis()-start)+"ms");
+					*/
 				}catch(InterruptedException e){
 					//e.printStackTrace();
 				}
@@ -440,7 +462,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 	
 	@Override
 	public void onProviderDisabled(String provider) {
-		Log.d("AccessSupporter","onProviderDisabled:"+provider);
+		//Log.d("AccessSupporter","onProviderDisabled:"+provider);
 		sendToActivity("onProviderDisabled:"+provider);
 	}
 
@@ -482,15 +504,15 @@ public class AccessSupporterService extends Service implements LocationListener,
 		}
 	}
 	
-	
+	/*
 	boolean ekimemoIsForeground(){
 		
 		UsageEvents.Event event=getForegroundApp();
 		
 		return event!=null && event.getPackageName().equals("jp.mfapps.loc.ekimemo");
 	}
-	
-	UsageEvents.Event getForegroundApp(){
+	*/
+	boolean ekimemoIsForeground(){
 		long start=System.currentTimeMillis()-1000*60*60*24;
 		long end=System.currentTimeMillis()+100;
 		
@@ -498,12 +520,49 @@ public class AccessSupporterService extends Service implements LocationListener,
 		UsageEvents usageEvents = stats.queryEvents(start, end);//usegeEventsのうち後ろにあるほど新しいevent
 		UsageEvents.Event event=null;
 		
+		
+		boolean isForeground=false;
 		while (usageEvents.hasNextEvent()) {
 			event = new android.app.usage.UsageEvents.Event();
 			usageEvents.getNextEvent(event);
+			/*
+			//log用
+			String type;
+			switch(event.getEventType()){
+				case UsageEvents.Event.MOVE_TO_BACKGROUND:
+					type="MOVE_TO_BACKGROUND";
+					break;
+				case UsageEvents.Event.MOVE_TO_FOREGROUND:
+					type="MOVE_TO_FOREGROUND";
+					break;
+				case UsageEvents.Event.CONFIGURATION_CHANGE:
+					type="CONFIGURATION_CHANGE";
+					break;
+				case UsageEvents.Event.USER_INTERACTION:
+					type="USER_INTERACTION";
+					break;
+				default:
+					type="Unknown";
+					break;
+			}
+			Log.d("AccessSupporter","app usage:"+event.getTimeStamp()+":"+event.getPackageName()+","+type);
+			*/
+			if(event.getPackageName().equals("jp.mfapps.loc.ekimemo")){
+				switch(event.getEventType()){
+					case UsageEvents.Event.MOVE_TO_BACKGROUND:
+						isForeground=false;
+						break;
+					case UsageEvents.Event.MOVE_TO_FOREGROUND:
+						isForeground=true;
+						break;
+					default:
+						break;
+				}
+			}
 		}
 		
-		return event;
+		Log.d("AccessSupporter","ekimemoIsForeground()="+isForeground);
+		return isForeground;
 	}
 	
 	private void sendToActivity(String message){
@@ -514,7 +573,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 	
 	
 	
-	void connectAdb(){
+	private void connectAdb(){
 		final Handler handler=new Handler();
 		
 		new Thread(new Runnable() {
