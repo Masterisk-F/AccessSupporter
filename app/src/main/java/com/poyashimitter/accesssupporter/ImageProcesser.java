@@ -136,9 +136,10 @@ public class ImageProcesser {
 	
 	private void takeScreenshot() throws IOException{
 		try{
-			adbStream.write("screencap "+screenshotPath+"\n");
+			String command="screencap "+screenshotPath+"\n";
+			adbStream.write(command);
 			Thread.sleep(3000);
-			Log.d("accesssupporter","command = "+"screencap "+screenshotPath);
+			Log.d("accesssupporter","command = "+command);
 		}catch(InterruptedException e){}
 		
 	}
@@ -211,13 +212,8 @@ public class ImageProcesser {
 		}
 		
 		MatOfDMatch matches = new MatOfDMatch();
-		//Log.d("accesssupporter","errMatDescriptor : "+errMatDescriptor.toString()+"\nscreenDescriptor : "+screenDescriptor.toString());//!!!!!!!!!!!!!!
-		try{
-			matcher.match(errMatDescriptor,screenDescriptor,matches);
-		}catch(Exception e){//スリープ時のスクショだとscreenDescriptorが空でエラーになるため
-			e.printStackTrace();
-			return NORMAL;
-		}
+		matcher.match(errMatDescriptor,screenDescriptor,matches);
+		
 		
 		List<DMatch> dmList = new ArrayList<DMatch>(130);
 		for (DMatch dm : matches.toArray()) {
@@ -225,7 +221,7 @@ public class ImageProcesser {
 				dmList.add(dm);
 			}
 		}
-		Log.d("accesssupporter","ekimemoIsError()... image processing time : "+(System.currentTimeMillis()-start)+"ms");
+		//Log.d("accesssupporter","ekimemoIsError()... image processing time : "+(System.currentTimeMillis()-start)+"ms");
 		Log.d("accesssupporter","ekimemoIsError()...err:dmList.size()="+dmList.size());
 		
 		if(dmList.size()>50)
@@ -237,12 +233,8 @@ public class ImageProcesser {
 		//conn_Err
 		
 		matches = new MatOfDMatch();
-		try{
-			matcher.match(connErrMatDescriptor,screenDescriptor,matches);
-		}catch(Exception e){//スリープ時のスクショだとscreenDescriptorが空でエラーになるため
-			e.printStackTrace();
-			return NORMAL;
-		}
+		matcher.match(connErrMatDescriptor,screenDescriptor,matches);
+		
 		
 		dmList = new ArrayList<DMatch>(130);
 		for (DMatch dm : matches.toArray()) {

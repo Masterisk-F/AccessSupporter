@@ -1,6 +1,7 @@
 package com.poyashimitter.accesssupporter.StationData;
 
 
+import android.location.Location;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -20,6 +21,8 @@ public class StationHandler {
 	//List<Station> stationList;
 	
 	private StationNode root;//kd木の根
+	
+	private List<Station> stationList;//複数の近傍駅を調べるため残しておく
 	
 	
 	private Comparator<Station> compareByLon=new Comparator<Station>() {
@@ -73,7 +76,7 @@ public class StationHandler {
 		long start=System.currentTimeMillis();
 		
 		Map<Integer,Line> lineMap=createLineMap(line);
-		List<Station> stationList=createStationList(station,lineMap);
+		stationList=createStationList(station,lineMap);
 		
 		//other_operating_stationはここ(新幹線より前)
 		if(otherOperatingStaion!=null){
@@ -364,6 +367,33 @@ public class StationHandler {
 		double r=6371000;//地球の平均半径[m]
 		return distance/(2*Math.PI*r)*360;
 	}
+	
+	
+	//listで最寄り駅を求める。リニアサーチ
+	//NearbyStationsFragmentから呼ばれる
+	public List<Station> getNearbyStationsList(Location location){
+		List<Station> list=new ArrayList<Station>();
+		List<Double> distancelist=new ArrayList<Double>();
+		
+		for(int i=0;i<12;i++){
+			list.add(stationList.get(i));
+			distancelist.add(stationList.get(i).distanceTo(location.getLongitude(),location.getLatitude()));
+		}
+		for(Station sta: stationList){
+			
+			double distance=sta.distanceTo(location.getLongitude(),location.getLatitude());
+			
+			for(int i=0;i<Math.min(12,distancelist.size());i++){
+				if(distance<distancelist.get(i)){
+					list.add(i,sta);
+					distancelist.add(i,distance);
+					break;
+				}
+			}
+		}
+		return new ArrayList<Station>(list.subList(0,Math.min(list.size(),12)));
+	}
+	
 	
 	private Station getSameStation(List<Station> list, int group_code, String name){
 		//listはcompareByIdに従ってソートされているとする

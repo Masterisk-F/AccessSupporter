@@ -58,11 +58,11 @@ public class AccessSupporterService extends Service implements LocationListener,
 	
 	Bitmap largeIcon;//通知領域を表示した時に出てくるアイコン
 	
-	boolean isRunning=false;//最寄り駅通知を行っている間true
+	private boolean isRunning=false;//最寄り駅通知を行っている間true
 	
 	Station currentStation;//現在の最寄り駅
 	
-	Location gpsLocation;//gpsによる最新の位置情報
+	Location currentLocation;//最新の位置情報
 	long gpsSignalTime=0;//gpsの最新の受信時刻
 	Location networkLocation;//networkによる最新の位置情報
 	long gpsEnabledTime=20000;//gpsを最後に受信してから、gpsが有効である時間[ms]
@@ -71,8 +71,13 @@ public class AccessSupporterService extends Service implements LocationListener,
 	Thread intervalsThread;//5分毎のタッチ処理で使うThreadをここに置いておく(割り込みを使うため)
 	
 	
-	public static String STATUS_CHANGED="AccessSupporter.StatusChanged";//Activityにメッセージを送るときのキー
-	
+	//broadcastのキー
+	//log用
+	public static String STATUS_CHANGED="com.poyashimitter.AccessSupporter.StatusChanged";
+	//位置情報更新時
+	public static String LOCATION_CANGED="com.poyashimitter.AccessSupporter.LocationChanged";
+	//最寄り駅変更時
+	public static String NEAREST_STATION_CHANGED="com.poyashimitter.AccessSupporter.NearestStationChanged";
 	
 	Thread th;//エラー画面の検出を繰り返し行う
 	
@@ -127,6 +132,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 		registerReceiver(screenActionReceiver,new IntentFilter(Intent.ACTION_SCREEN_ON));
 		registerReceiver(screenActionReceiver,new IntentFilter(Intent.ACTION_SCREEN_OFF));
 		
+		((AccessSupporterApplication)getApplication()).setAccessSupporterService(this);
 	}
 	
 	@Override
@@ -134,7 +140,8 @@ public class AccessSupporterService extends Service implements LocationListener,
 		super.onDestroy();
 		unregisterReceiver(screenActionReceiver);
 		try{
-			adbStream.close();
+			if(adbStream!=null)
+				adbStream.close();
 		}catch(IOException e){
 			e.printStackTrace();
 		}
@@ -186,7 +193,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 			th=null;
 		}else if(intent.getAction().equals("start")){
 			currentStation=null;
-			gpsLocation=null;
+			currentLocation=null;
 			networkLocation=null;
 			
 			gpsSignalTime=0;
@@ -215,6 +222,10 @@ public class AccessSupporterService extends Service implements LocationListener,
 		return super.onStartCommand(intent, flags, startId);
 	}
 
+	public boolean isRunning(){
+		return isRunning;
+	}
+	
 	public void run(){
 		
 		while(th!=null){
@@ -292,24 +303,28 @@ public class AccessSupporterService extends Service implements LocationListener,
 		Log.d("AccessSupporter","onLocationChanged : provider="+location.getProvider()
 				+", location="+location.getLongitude()+", "+location.getLatitude());
 		
-		sendToActivity("onLocationChanged : \n	provider="+location.getProvider()
+		onStatusChangedBroadcast("onLocationChanged : \n	provider="+location.getProvider()
 				+", location="+location.getLongitude()+", "+location.getLatitude());
 		
 		if(location.getProvider().equals("gps")){
-			gpsLocation=location;
+			currentLocation=location;
 			gpsSignalTime= Calendar.getInstance().getTimeInMillis();
 		}else if(location.getProvider().equals("network")){
-			
+			/*
 			if(networkLocation!=null && networkLocation.distanceTo(location)<1){//位置が変化しているかどうか
 				return;
 			}
-			networkLocation=location;
+			networkLocation=location;*/
 			if(Calendar.getInstance().getTimeInMillis() < gpsSignalTime+gpsEnabledTime){
 				return;
 			}
+			currentLocation=location;
 		}else{
 			return;
 		}
+		
+		//((AccessSupporterApplication)getApplication()).setCurrentLocation(location);
+		onLocationChangedBroadcast(location);
 		
 		long start=System.currentTimeMillis();
 		Station st=stationHandler.getNearestStation(location.getLongitude(),location.getLatitude());
@@ -319,15 +334,17 @@ public class AccessSupporterService extends Service implements LocationListener,
 		if(currentStation!=null && currentStation.equals(st)){
 			return;
 		}
-		
+		/*
+		//test
 		start=System.currentTimeMillis();
 		Station tmp=stationHandler.getField(location.getLongitude(),location.getLatitude());
 		Log.d("AccessSupporter","getField : "+
 				tmp.getStationName()
 						+"\ntime : "+(System.currentTimeMillis()-start)+"ms");
-		
+		*/
 		
 		//最寄り駅が変化したとき、ここより下の処理に進む
+		onNearestStationChangedBroadcast(st);
 		
 		NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext());
 		builder.setSmallIcon(R.mipmap.ic_launcher)
@@ -357,12 +374,21 @@ public class AccessSupporterService extends Service implements LocationListener,
 	}
 	
 	
+	
 	private void touchToReset() throws InterruptedException{
-		if(!screenOn || !ekimemoIsForeground()){
+		if(!screenOn || adbStream==null || !ekimemoIsForeground()){
 			return;
 		}
 		
-		switch(imageProcesser.ekimemoIsError()){
+		int n;
+		try{
+			n=imageProcesser.ekimemoIsError();
+		}catch(Exception e){//たまにエラーが起きるため念のため
+			Log.d("AccessSupporter","touchToReset() : Unknown Error");
+			e.printStackTrace();
+			return;
+		}
+		switch(n){
 			case ImageProcesser.ERROR:
 				Log.d("AccessSupporter","touchToReset() : ekimemoIsError()=ImageProcesser.ERROR");
 				synchronized(touchLock){
@@ -398,7 +424,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 	}
 	
 	private void touchToAccess(){
-		if(!ekimemoIsForeground())
+		if(!ekimemoIsForeground() || adbStream==null)
 			return;
 		
 		new Thread(new Runnable(){
@@ -463,19 +489,19 @@ public class AccessSupporterService extends Service implements LocationListener,
 	@Override
 	public void onProviderDisabled(String provider) {
 		//Log.d("AccessSupporter","onProviderDisabled:"+provider);
-		sendToActivity("onProviderDisabled:"+provider);
+		onStatusChangedBroadcast("onProviderDisabled:"+provider);
 	}
 
 	@Override
 	public void onProviderEnabled(String provider) {
 		//Log.d("AccessSupporter","onProviderEnabled:"+provider);
-		sendToActivity("onProviderEnabled:"+provider);
+		onStatusChangedBroadcast("onProviderEnabled:"+provider);
 	}
 
 	@Override
 	public void onStatusChanged(String provider, int status, Bundle extras) {
 		//Log.d("AccessSupporter","onStatusChanged");
-		sendToActivity("onStatusChanged");
+		onStatusChangedBroadcast("onStatusChanged");
 	}
 	
 	
@@ -486,7 +512,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 		switch(event){
 			case GpsStatus.GPS_EVENT_FIRST_FIX:
 				//Log.d("AccessSupporter","onGpsStatusChanged : GPS_EVENT_FIRST_FIX");
-				sendToActivity("onGpsStatusChanged : \n	GPS_EVENT_FIRST_FIX");
+				onStatusChangedBroadcast("onGpsStatusChanged : \n	GPS_EVENT_FIRST_FIX");
 				break;
 			case GPS_EVENT_SATELLITE_STATUS:
 				//Log.d("AccessSupporter","onGpsStatusChanged : GPS_EVENT_SATELLITE_STATUS");
@@ -495,11 +521,11 @@ public class AccessSupporterService extends Service implements LocationListener,
 				break;
 			case GpsStatus.GPS_EVENT_STARTED:
 				//Log.d("AccessSupporter","onGpsStatusChanged : GPS_EVENT_STARTED");
-				sendToActivity("onGpsStatusChanged : \n	GPS_EVENT_STARTED");
+				onStatusChangedBroadcast("onGpsStatusChanged : \n	GPS_EVENT_STARTED");
 				break;
 			case GpsStatus.GPS_EVENT_STOPPED:
 				//Log.d("AccessSupporter","onGpsStatusChanged : GPS_EVENT_STOPPED");
-				sendToActivity("onGpsStatusChanged : \n	GPS_EVENT_STOPPED");
+				onStatusChangedBroadcast("onGpsStatusChanged : \n	GPS_EVENT_STOPPED");
 				break;
 		}
 	}
@@ -565,11 +591,19 @@ public class AccessSupporterService extends Service implements LocationListener,
 		return isForeground;
 	}
 	
-	private void sendToActivity(String message){
+	private void onStatusChangedBroadcast(String message){
+		((AccessSupporterApplication)getApplication()).addLogString(message);
 		sendBroadcast(new Intent(STATUS_CHANGED).putExtra(STATUS_CHANGED,message));
 	}
 	
-	
+	private void onLocationChangedBroadcast(Location loc){
+		((AccessSupporterApplication)getApplication()).setCurrentLocation(loc);
+		sendBroadcast(new Intent(LOCATION_CANGED));
+	}
+	private void onNearestStationChangedBroadcast(Station sta){
+		((AccessSupporterApplication)getApplication()).addStationHistory(sta);
+		sendBroadcast(new Intent(NEAREST_STATION_CHANGED));
+	}
 	
 	
 	

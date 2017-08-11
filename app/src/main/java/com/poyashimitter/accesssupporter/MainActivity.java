@@ -4,7 +4,6 @@ import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
@@ -30,9 +29,7 @@ import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity 
-		implements View.OnClickListener,NearbyStationsFragment.OnFragmentInteractionListener,
-		HistoryOfStationsFragment.OnFragmentInteractionListener,
-		LogFragment.OnFragmentInteractionListener{
+		implements View.OnClickListener{
 	Button notification;
 	Button launchEkimemo;
 	Button displayMap;
@@ -116,10 +113,10 @@ public class MainActivity extends AppCompatActivity
 				Fragment fragment=null;
 				switch(position){
 					case 0:
-						fragment= HistoryOfStationsFragment.newInstance(null,null);
+						fragment= NearbyStationsFragment.newInstance(null,null);
 						break;
 					case 1:
-						fragment= NearbyStationsFragment.newInstance(null,null);
+						fragment= HistoryOfStationsFragment.newInstance(null,null);
 						break;
 					case 2:
 						fragment= LogFragment.newInstance(null,null);
@@ -158,11 +155,6 @@ public class MainActivity extends AppCompatActivity
 		tabLayout.setupWithViewPager(viewPager);
 	}
 	
-	
-	@Override
-	public void onFragmentInteraction(Uri uri) {
-		
-	}
 	
 	@Override
 	protected void onDestroy() {

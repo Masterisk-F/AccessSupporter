@@ -57,11 +57,12 @@ public class Station {
 		return line.toArray(new Line[line.size()]);
 	}
 	public String getLineNames(){
-		String str="";
+		StringBuilder str=new StringBuilder();
 		for(Line l:line){
-			str+=l.getLineName()+", ";
+			str.append(l.getLineName());
+			str.append(", ");
 		}
-		return str;
+		return str.substring(0,Math.max(0,str.length()-2));
 	}
 	
 	public void setAddress(String add){
