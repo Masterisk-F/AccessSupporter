@@ -187,7 +187,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 	void setNearbyStations(){
 		AccessSupporterApplication application=(AccessSupporterApplication)getApplication();
 		if(nearbyStations==null && application.getCurrentLocation()!=null){
-			int num=90;
+			int num=80;
 			List<Station>list=application.getStationHandler()
 					.getNearbyStationsList(application.getCurrentLocation(),num);
 			nearbyStations=new ArrayList<Marker>(num);

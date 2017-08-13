@@ -158,12 +158,12 @@ public class AccessSupporterService extends Service implements LocationListener,
 			if(stationHandler==null){
 				try{
 					stationHandler=new StationHandler(
-							new InputStreamReader(getAssets().open("station20170403free - 2017-04-28.csv", AssetManager.ACCESS_BUFFER)),
+							new InputStreamReader(getAssets().open("station20170403free - 2017-08-13.csv", AssetManager.ACCESS_BUFFER)),
 							new InputStreamReader(getAssets().open("line20170403free.csv", AssetManager.ACCESS_BUFFER)),
-							new InputStreamReader(getAssets().open("other_operating_station - 2017-04-28.csv", AssetManager.ACCESS_BUFFER)),
-							new InputStreamReader(getAssets().open("abolished_station - 2017-03-20.csv", AssetManager.ACCESS_BUFFER)),
+							new InputStreamReader(getAssets().open("other_operating_station - 2017-08-13.csv", AssetManager.ACCESS_BUFFER)),
+							new InputStreamReader(getAssets().open("abolished_station - 2017-08-13.csv", AssetManager.ACCESS_BUFFER)),
 							new InputStreamReader(getAssets().open("shinkansen.csv")),
-							new InputStreamReader(getAssets().open("abolished_line - 2017-03-19.csv")),
+							new InputStreamReader(getAssets().open("abolished_line - 2017-08-13.csv")),
 							prefs
 									.getBoolean("contain_abolished_station",true));
 					

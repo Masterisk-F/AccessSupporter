@@ -450,7 +450,10 @@ public class StationHandler {
 		String str;
 		try {
 			while((str=reader.readLine())!=null){
-				String[] data=str.split(",");
+				if(str.length()==0 || str.startsWith("#"))
+					continue;
+				
+				String[] data=str.split(",",-1);
 				Line line=new Line();
 				Integer key=Integer.valueOf(data[line_cd_index]);
 				line.setLineCode(key);
