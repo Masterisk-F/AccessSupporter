@@ -21,6 +21,7 @@ import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.poyashimitter.accesssupporter.StationData.Station;
@@ -154,6 +155,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 				== PackageManager.PERMISSION_GRANTED) {
 			mMap.setMyLocationEnabled(true);
 		}
+		
+		mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this,R.raw.map_style));
+		
 		LatLng current;
 		AccessSupporterApplication application=(AccessSupporterApplication)getApplication();
 		if(application.getCurrentLocation()==null){
