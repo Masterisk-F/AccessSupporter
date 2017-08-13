@@ -64,7 +64,6 @@ public class AccessSupporterService extends Service implements LocationListener,
 	
 	Location currentLocation;//最新の位置情報
 	long gpsSignalTime=0;//gpsの最新の受信時刻
-	Location networkLocation;//networkによる最新の位置情報
 	long gpsEnabledTime=20000;//gpsを最後に受信してから、gpsが有効である時間[ms]
 	final Object touchLock=new Object();//画面タッチのときにロックするオブジェクト
 	
@@ -194,7 +193,6 @@ public class AccessSupporterService extends Service implements LocationListener,
 		}else if(intent.getAction().equals("start")){
 			currentStation=null;
 			currentLocation=null;
-			networkLocation=null;
 			
 			gpsSignalTime=0;
 			
@@ -271,7 +269,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 					this
 			);
 			
-			
+			Log.d("AccessSupporter","requestLocationUpdates(),gps");
 		}
 		if(ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_COARSE_LOCATION)
 				==PackageManager.PERMISSION_GRANTED){
@@ -713,7 +711,6 @@ public class AccessSupporterService extends Service implements LocationListener,
 						Toast.makeText(getApplicationContext(),"adb接続に成功しました",Toast.LENGTH_LONG).show();
 					}
 				});
-				
 				
 				while(true){
 					if(imageProcesser!=null){

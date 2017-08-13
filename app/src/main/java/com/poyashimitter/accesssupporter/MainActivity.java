@@ -76,25 +76,7 @@ public class MainActivity extends AppCompatActivity
 		
 		Intent in=new Intent(MainActivity.this,AccessSupporterService.class);
 		startService(in.setAction("activityCreated"));
-		/*
-		logTextView=(TextView)findViewById(logTextView);
 		
-		
-		//Serviceからのメッセージを受け取るための設定
-		eventReceiver=new BroadcastReceiver() {
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				if(logTextView!=null){
-					String str=intent.getStringExtra(AccessSupporterService.STATUS_CHANGED);
-					str+="\n"+logTextView.getText();
-					str=str.substring(0,Math.min(str.length(),4000));
-					logTextView.setText(str);
-				}
-			}
-		};
-		eventFilter=new IntentFilter();
-		eventFilter.addAction(AccessSupporterService.STATUS_CHANGED);
-		registerReceiver(eventReceiver,eventFilter);*/
 	}
 	
 	
@@ -188,6 +170,7 @@ public class MainActivity extends AppCompatActivity
 				}
 				break;
 			case R.id.displayMap:
+				startActivity(new Intent(MainActivity.this,MapsActivity.class));
 				break;
 		}
 		Log.d("AccessSupporter","onclick");

@@ -371,29 +371,35 @@ public class StationHandler {
 	
 	//listで最寄り駅を求める。リニアサーチ
 	//NearbyStationsFragmentから呼ばれる
-	public List<Station> getNearbyStationsList(Location location){
+	public List<Station>  getNearbyStationsList(Location loc){
+		return getNearbyStationsList(loc,12);
+	}
+	public List<Station> getNearbyStationsList(Location loc,int num){
 		List<Station> list=new ArrayList<Station>();
-		List<Double> distancelist=new ArrayList<Double>();
-		
-		for(int i=0;i<12;i++){
+		List<Double> distanceList=new ArrayList<Double>();
+		for(int i=0;i<num;i++){
 			list.add(stationList.get(i));
-			distancelist.add(stationList.get(i).distanceTo(location.getLongitude(),location.getLatitude()));
+			distanceList.add(stationList.get(i).distanceTo(loc.getLongitude(),loc.getLatitude()));
 		}
 		for(Station sta: stationList){
 			
-			double distance=sta.distanceTo(location.getLongitude(),location.getLatitude());
+			double distance=sta.distanceTo(loc.getLongitude(),loc.getLatitude());
 			
-			for(int i=0;i<Math.min(12,distancelist.size());i++){
-				if(distance<distancelist.get(i)){
+			for(int i=0;i<Math.min(num,distanceList.size());i++){
+				if(distance<distanceList.get(i)){
 					list.add(i,sta);
-					distancelist.add(i,distance);
+					distanceList.add(i,distance);
 					break;
 				}
 			}
 		}
-		return new ArrayList<Station>(list.subList(0,Math.min(list.size(),12)));
+		return new ArrayList<Station>(list.subList(0,Math.min(list.size(),num)));
 	}
 	
+	
+	public List<Station> getAllStationsList(){
+		return stationList;
+	}
 	
 	private Station getSameStation(List<Station> list, int group_code, String name){
 		//listはcompareByIdに従ってソートされているとする

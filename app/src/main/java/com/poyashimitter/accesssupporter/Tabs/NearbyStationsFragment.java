@@ -7,6 +7,7 @@ import android.content.IntentFilter;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.View;
 
 import com.poyashimitter.accesssupporter.AccessSupporterApplication;
@@ -61,10 +62,9 @@ public class NearbyStationsFragment extends StationsListFragment {
 	@Override
 	public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
+		Log.d("AccessSupporter","NearbyStationsFragment::onViewCreated()");
 		
-		if((((AccessSupporterApplication)getActivity().getApplication()).getAccessSupporterService().isRunning())){
-			setStationsList();
-		}
+		setStationsList();
 		
 		IntentFilter filter=new IntentFilter();
 		filter.addAction(AccessSupporterService.LOCATION_CANGED);
@@ -72,24 +72,35 @@ public class NearbyStationsFragment extends StationsListFragment {
 	}
 	
 	void setStationsList(){
-		AccessSupporterApplication application=(AccessSupporterApplication)getActivity().getApplication();
-		if(application==null){
-			return;
-		}
-		Location location=application.getCurrentLocation();
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				AccessSupporterApplication application=(AccessSupporterApplication)getActivity().getApplication();
+				if(application==null || application.getStationHandler()==null){
+					return;
+				}
+				Location location=application.getCurrentLocation();
+				
+				if(location==null){
+					return;
+				}
+				
+				final List<Station> list=application.getStationHandler().getNearbyStationsList(location);
+				
+				getActivity().runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						setStationsList(list,true);
+					}
+				});
+			}
+		}).start();
 		
-		if(location==null ||application.getStationHandler()==null){
-			return;
-		}
-		
-		List<Station> list=application.getStationHandler().getNearbyStationsList(location);
-		
-		setStationsList(list,true);
 	}
 	
 	@Override
-	public void onDetach() {
-		super.onDetach();
+	public void onDestroy() {
+		super.onDestroy();
 		getActivity().unregisterReceiver(locationChangedReceiver);
 	}
 	
