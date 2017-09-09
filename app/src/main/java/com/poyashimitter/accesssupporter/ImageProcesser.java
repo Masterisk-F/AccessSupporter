@@ -137,7 +137,7 @@ public class ImageProcesser {
 	private void takeScreenshot() throws IOException{
 		try{
 			String command="screencap "+screenshotPath+"\n";
-			adbStream.write(command);
+			adbStream.write(" "+command);
 			Thread.sleep(3000);
 			Log.d("accesssupporter","command = "+command);
 		}catch(InterruptedException e){}

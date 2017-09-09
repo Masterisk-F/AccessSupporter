@@ -138,11 +138,23 @@ public class AccessSupporterService extends Service implements LocationListener,
 	public void onDestroy() {
 		super.onDestroy();
 		unregisterReceiver(screenActionReceiver);
-		try{
+		/*try{
 			if(adbStream!=null)
 				adbStream.close();
 		}catch(IOException e){
 			e.printStackTrace();
+		}*/
+		if(adbStream!=null){
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try{//UIスレッドでは弄れないため別スレッドで
+						adbStream.close();
+					}catch(IOException e){
+						e.printStackTrace();
+					}
+				}
+			}).start();
 		}
 	}
 	
@@ -158,9 +170,9 @@ public class AccessSupporterService extends Service implements LocationListener,
 			if(stationHandler==null){
 				try{
 					stationHandler=new StationHandler(
-							new InputStreamReader(getAssets().open("station20170403free - 2017-08-13.csv", AssetManager.ACCESS_BUFFER)),
+							new InputStreamReader(getAssets().open("station20170403free - 2017-09-09.csv", AssetManager.ACCESS_BUFFER)),
 							new InputStreamReader(getAssets().open("line20170403free.csv", AssetManager.ACCESS_BUFFER)),
-							new InputStreamReader(getAssets().open("other_operating_station - 2017-08-13.csv", AssetManager.ACCESS_BUFFER)),
+							new InputStreamReader(getAssets().open("other_operating_station - 2017-09-09.csv", AssetManager.ACCESS_BUFFER)),
 							new InputStreamReader(getAssets().open("abolished_station - 2017-08-13.csv", AssetManager.ACCESS_BUFFER)),
 							new InputStreamReader(getAssets().open("shinkansen.csv")),
 							new InputStreamReader(getAssets().open("abolished_line - 2017-08-13.csv")),
@@ -392,7 +404,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 				synchronized(touchLock){
 					try{
 						//Runtime.getRuntime().exec("adb shell input touchscreen tap 350 850");
-						adbStream.write("input touchscreen tap 550 1170\n");
+						adbStream.write(" input touchscreen tap 550 1170\n");
 						Thread.sleep(17000);
 					}catch(IOException e){
 						e.printStackTrace();
@@ -405,7 +417,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 				Log.d("AccessSupporter","touchToReset() : ekimemoIsError()=ImageProcesser.CONNECTION_ERROR");
 				synchronized(touchLock){
 					try{
-						adbStream.write("input touchscreen tap 450 1090\n");
+						adbStream.write(" input touchscreen tap 450 1090\n");
 						Thread.sleep(17000);
 					}catch(IOException e){
 						e.printStackTrace();
@@ -431,13 +443,13 @@ public class AccessSupporterService extends Service implements LocationListener,
 				synchronized(touchLock){
 					try{
 						if(prefs.getBoolean("change_denco",false)){
-							adbStream.write("input touchscreen tap 1040 1250\n");
+							adbStream.write(" input touchscreen tap 1040 1250\n");
 							Thread.sleep(1000);
 						}
 						
-						adbStream.write("input touchscreen tap 1000 1700\n");
+						adbStream.write(" input touchscreen tap 1000 1700\n");
 						Thread.sleep(5500);
-						adbStream.write("input touchscreen tap 1000 1700\n");
+						adbStream.write(" input touchscreen tap 1000 1700\n");
 						Thread.sleep(1000);
 						
 						
