@@ -225,7 +225,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 			
 			//最初に表示する通知
 			NotificationCompat.Builder first = new NotificationCompat.Builder(getApplicationContext());
-			first.setSmallIcon(R.mipmap.ic_launcher)
+			first.setSmallIcon(R.mipmap.eki_1)
 					.setLargeIcon(largeIcon)
 					.setContentTitle("AccessSupporter")
 					.setVibrate(new long[]{0,100})
@@ -369,7 +369,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 		onNearestStationChangedBroadcast(st);
 		
 		NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext());
-		builder.setSmallIcon(R.mipmap.ic_launcher)
+		builder.setSmallIcon(R.mipmap.eki_1)
 				.setLargeIcon(largeIcon)
 				.setContentTitle("AccessSupporter")
 				.setContentText("最寄り駅 : "+st.getStationName()+" ("+location.getProvider()+")")
