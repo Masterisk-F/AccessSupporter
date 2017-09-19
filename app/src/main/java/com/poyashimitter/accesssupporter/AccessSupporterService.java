@@ -123,6 +123,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 		
 		prefs=PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 		
+		((AccessSupporterApplication)getApplication()).setAccessSupporterService(this);
 		
 		connectAdb();
 		
@@ -131,30 +132,41 @@ public class AccessSupporterService extends Service implements LocationListener,
 		registerReceiver(screenActionReceiver,new IntentFilter(Intent.ACTION_SCREEN_ON));
 		registerReceiver(screenActionReceiver,new IntentFilter(Intent.ACTION_SCREEN_OFF));
 		
-		((AccessSupporterApplication)getApplication()).setAccessSupporterService(this);
+		//((AccessSupporterApplication)getApplication()).setAccessSupporterService(this);
 	}
 	
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
 		unregisterReceiver(screenActionReceiver);
-		/*try{
-			if(adbStream!=null)
-				adbStream.close();
-		}catch(IOException e){
-			e.printStackTrace();
-		}*/
+		
+		//念のため
+		//((AccessSupporterApplication)getApplication()).setNotificationIsRunning(false);
+		
+		((AccessSupporterApplication)getApplication()).setAccessSupporterService(null);
+		
+		
+		
 		if(adbStream!=null){
-			new Thread(new Runnable() {
+			Thread th=new Thread(new Runnable() {
 				@Override
 				public void run() {
 					try{//UIスレッドでは弄れないため別スレッドで
-						adbStream.close();
+						adbStream.write(" exit\n");
+						
 					}catch(IOException e){
+						e.printStackTrace();
+					}catch(InterruptedException e){
 						e.printStackTrace();
 					}
 				}
-			}).start();
+			});
+			th.start();
+			try{
+				th.join();
+			}catch(InterruptedException e){
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -196,6 +208,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 			stopLocationUpdate();
 			stopForeground(true);//foreground終了
 			//stopSelf();//service終了
+			
 			isRunning=false;
 			
 			if(th!=null){
@@ -209,7 +222,6 @@ public class AccessSupporterService extends Service implements LocationListener,
 			gpsSignalTime=0;
 			
 			isRunning=true;
-			
 			
 			//最初に表示する通知
 			NotificationCompat.Builder first = new NotificationCompat.Builder(getApplicationContext());

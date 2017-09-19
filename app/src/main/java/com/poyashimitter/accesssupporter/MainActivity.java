@@ -152,7 +152,7 @@ public class MainActivity extends AppCompatActivity
 			case R.id.notification:
 				//logTextView.setText("");
 				Intent in=new Intent(MainActivity.this,AccessSupporterService.class);
-				if(/*!serviceRunning()*/notification.getText().equals("開始")){
+				if(notification.getText().equals("開始")){
 					startService(in.setAction("start"));
 					notification.setText("停止");
 				}else{
@@ -200,8 +200,9 @@ public class MainActivity extends AppCompatActivity
 		for (RunningServiceInfo curr : listServiceInfo) {
 			// クラス名を比較
 			if (curr.service.getClassName().equals(AccessSupporterService.class.getName())) {
-				// 実行中のサービスと一致
-				return true;
+				// サービスが実行中
+				
+				return ((AccessSupporterApplication)getApplication()).getAccessSupporterService().isRunning();
 			}
 		}
 		return false;
