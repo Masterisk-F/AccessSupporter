@@ -6,9 +6,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.location.Location;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.util.Log;
-import android.view.View;
 
 import com.poyashimitter.accesssupporter.AccessSupporterApplication;
 import com.poyashimitter.accesssupporter.AccessSupporterService;
@@ -60,15 +57,22 @@ public class NearbyStationsFragment extends StationsListFragment {
 	}
 	
 	@Override
-	public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-		super.onViewCreated(view, savedInstanceState);
-		Log.d("AccessSupporter","NearbyStationsFragment::onViewCreated()");
+	public void onStart() {
+		super.onStart();
 		
 		setStationsList();
 		
 		IntentFilter filter=new IntentFilter();
 		filter.addAction(AccessSupporterService.LOCATION_CANGED);
 		getActivity().registerReceiver(locationChangedReceiver,filter);
+		
+	}
+	
+	@Override
+	public void onStop() {
+		super.onStop();
+		
+		getActivity().unregisterReceiver(locationChangedReceiver);
 	}
 	
 	void setStationsList(){
@@ -98,10 +102,6 @@ public class NearbyStationsFragment extends StationsListFragment {
 		
 	}
 	
-	@Override
-	public void onDestroy() {
-		super.onDestroy();
-		getActivity().unregisterReceiver(locationChangedReceiver);
-	}
+	
 	
 }

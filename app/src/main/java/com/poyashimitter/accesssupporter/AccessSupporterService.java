@@ -66,7 +66,15 @@ public class AccessSupporterService extends Service implements LocationListener,
 	long gpsSignalTime=0;//gpsの最新の受信時刻
 	long gpsEnabledTime=20000;//gpsを最後に受信してから、gpsが有効である時間[ms]
 	final Object touchLock=new Object();//画面タッチのときにロックするオブジェクト
-	
+
+	//adbのコマンド
+	//static String touchAccessCommand=" input touchscreen tap 1000 1700\n";
+	//static String touchChangeDencoCommand=" input touchscreen tap 1040 1250\n";
+
+	//for Zenfone 2 Lazer
+	static String touchAccessCommand=" input touchscreen tap 620 1180\n";
+	static String touchChangeDencoCommand=" input touchscreen tap 680 870\n";
+
 	Thread intervalsThread;//5分毎のタッチ処理で使うThreadをここに置いておく(割り込みを使うため)
 	
 	
@@ -140,12 +148,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 		super.onDestroy();
 		unregisterReceiver(screenActionReceiver);
 		
-		//念のため
-		//((AccessSupporterApplication)getApplication()).setNotificationIsRunning(false);
-		
 		((AccessSupporterApplication)getApplication()).setAccessSupporterService(null);
-		
-		
 		
 		if(adbStream!=null){
 			Thread th=new Thread(new Runnable() {
@@ -455,13 +458,13 @@ public class AccessSupporterService extends Service implements LocationListener,
 				synchronized(touchLock){
 					try{
 						if(prefs.getBoolean("change_denco",false)){
-							adbStream.write(" input touchscreen tap 1040 1250\n");
+							adbStream.write(touchChangeDencoCommand);
 							Thread.sleep(1000);
 						}
 						
-						adbStream.write(" input touchscreen tap 1000 1700\n");
-						Thread.sleep(5500);
-						adbStream.write(" input touchscreen tap 1000 1700\n");
+						adbStream.write(touchAccessCommand);
+						Thread.sleep(7000);
+						adbStream.write(touchAccessCommand);
 						Thread.sleep(1000);
 						
 						
@@ -551,15 +554,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 				break;
 		}
 	}
-	
-	/*
-	boolean ekimemoIsForeground(){
-		
-		UsageEvents.Event event=getForegroundApp();
-		
-		return event!=null && event.getPackageName().equals("jp.mfapps.loc.ekimemo");
-	}
-	*/
+
 	boolean ekimemoIsForeground(){
 		long start=System.currentTimeMillis()-1000*60*60*24;
 		long end=System.currentTimeMillis()+100;
@@ -573,28 +568,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 		while (usageEvents.hasNextEvent()) {
 			event = new android.app.usage.UsageEvents.Event();
 			usageEvents.getNextEvent(event);
-			/*
-			//log用
-			String type;
-			switch(event.getEventType()){
-				case UsageEvents.Event.MOVE_TO_BACKGROUND:
-					type="MOVE_TO_BACKGROUND";
-					break;
-				case UsageEvents.Event.MOVE_TO_FOREGROUND:
-					type="MOVE_TO_FOREGROUND";
-					break;
-				case UsageEvents.Event.CONFIGURATION_CHANGE:
-					type="CONFIGURATION_CHANGE";
-					break;
-				case UsageEvents.Event.USER_INTERACTION:
-					type="USER_INTERACTION";
-					break;
-				default:
-					type="Unknown";
-					break;
-			}
-			Log.d("AccessSupporter","app usage:"+event.getTimeStamp()+":"+event.getPackageName()+","+type);
-			*/
+
 			if(event.getPackageName().equals("jp.mfapps.loc.ekimemo")){
 				switch(event.getEventType()){
 					case UsageEvents.Event.MOVE_TO_BACKGROUND:
