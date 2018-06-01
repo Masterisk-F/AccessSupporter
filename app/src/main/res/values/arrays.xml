@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    
+
+    <string-array name="display_size_entries">
+        <item>Huawei Nova lite 2(2160*1080)</item>
+        <item>Covia g07+(1920*1080)</item>
+        <item>Asus Zenfone 2 Lazer(1280*720)</item>
+    </string-array>
+    <string-array name="display_size_entryvalues">
+        <item>2160*1080</item>
+        <item>1920*1080</item>
+        <item>1280*720</item>
+    </string-array>
+
     <string-array name="vibration_entries">
         <item>常に動作</item>
         <item>駅メモがフォアグラウンドでないときのみ動作</item>

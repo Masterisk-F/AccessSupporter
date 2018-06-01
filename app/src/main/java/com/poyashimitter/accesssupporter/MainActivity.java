@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import com.poyashimitter.accesssupporter.Setting.SettingActivity;
 import com.poyashimitter.accesssupporter.Tabs.HistoryOfStationsFragment;
@@ -30,7 +31,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity 
 		implements View.OnClickListener{
-	Button notification;
+	ToggleButton notification;
 	Button launchEkimemo;
 	Button displayMap;
 	
@@ -62,10 +63,11 @@ public class MainActivity extends AppCompatActivity
 		setTabAndPager();
 		
 		
-		notification=(Button)findViewById(R.id.notification);
-		if(serviceRunning()){//判定条件これで良い？？
-			notification.setText("停止");
-		}
+		notification=(ToggleButton)findViewById(R.id.notification);
+
+		//判定条件これで良い？？
+		notification.setChecked(serviceRunning());
+
 		notification.setOnClickListener(this);
 		
 		launchEkimemo=(Button)findViewById(R.id.launchEkimemo);
@@ -152,12 +154,11 @@ public class MainActivity extends AppCompatActivity
 			case R.id.notification:
 				//logTextView.setText("");
 				Intent in=new Intent(MainActivity.this,AccessSupporterService.class);
-				if(notification.getText().equals("開始")){
+
+				if(notification.isChecked()){
 					startService(in.setAction("start"));
-					notification.setText("停止");
 				}else{
 					startService(in.setAction("stop"));
-					notification.setText("開始");
 				}
 				break;
 			case R.id.launchEkimemo:

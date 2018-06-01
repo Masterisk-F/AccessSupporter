@@ -9,6 +9,14 @@
         android:key="contain_abolished_station"/>
 
     <ListPreference
+        android:key="display_size"
+        android:title="使用端末"
+        android:summary="タッチ位置の指定"
+        android:entries="@array/display_size_entries"
+        android:entryValues="@array/display_size_entryvalues"
+        />
+
+    <ListPreference
         android:key="vibration"
         android:title="バイブレーション"
         android:summary="バイブレーションの条件を設定"

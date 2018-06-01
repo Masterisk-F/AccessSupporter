@@ -46,6 +46,49 @@ import java.util.Calendar;
 
 import static android.location.GpsStatus.GPS_EVENT_SATELLITE_STATUS;
 
+
+class AdbCommand{
+	private static final String command_pre=" input touchscreen tap ";
+
+	SharedPreferences prefs;
+	AdbCommand(SharedPreferences prefs){
+		this.prefs=prefs;
+	}
+	String getAccessCommand(){
+		String size=prefs.getString("display_size","1920*1080");
+		String command=command_pre;
+		Log.d("AccessSupporter","DisplaySize="+size);
+		if(size.equals("2160*1080")){
+			command+="950 1900";
+		}else if(size.equals("1920*1080")){
+			command+="1000 1700";
+		}else{
+			command+="620 1180";
+		}
+		return command+"\n";
+	}
+	String getChangeDencoCommand(){
+		String size=prefs.getString("display_size","1920*1080");
+		String command=command_pre;
+		if(size.equals("2160*1080")){
+			command+="1030 1450";
+		}else if(size.equals("1920*1080")){
+			command+="1040 1250";
+		}else{
+			command+="680 870";
+		}
+		return command+"\n";
+	}
+
+	//未実装
+	String getErrorCommand(){
+		return "";
+	}
+	String getConnectionErrorCommand(){
+		return "";
+	}
+}
+
 public class AccessSupporterService extends Service implements LocationListener,GpsStatus.Listener,Runnable{
 	NotificationManager notificationManager;
 	
@@ -67,13 +110,12 @@ public class AccessSupporterService extends Service implements LocationListener,
 	long gpsEnabledTime=20000;//gpsを最後に受信してから、gpsが有効である時間[ms]
 	final Object touchLock=new Object();//画面タッチのときにロックするオブジェクト
 
-	//adbのコマンド
-	//static String touchAccessCommand=" input touchscreen tap 1000 1700\n";
-	//static String touchChangeDencoCommand=" input touchscreen tap 1040 1250\n";
+	//adbのコマンド for novalite2 2160*1080
+	AdbCommand adbCommand;
+	static String touchAccessCommand=" input touchscreen tap 950 1900\n";
+	static String touchChangeDencoCommand=" input touchscreen tap 1030 1450\n";
 
-	//for Zenfone 2 Lazer
-	static String touchAccessCommand=" input touchscreen tap 620 1180\n";
-	static String touchChangeDencoCommand=" input touchscreen tap 680 870\n";
+
 
 	Thread intervalsThread;//5分毎のタッチ処理で使うThreadをここに置いておく(割り込みを使うため)
 	
@@ -130,7 +172,7 @@ public class AccessSupporterService extends Service implements LocationListener,
 		largeIcon= BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
 		
 		prefs=PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-		
+		adbCommand=new AdbCommand(prefs);
 		((AccessSupporterApplication)getApplication()).setAccessSupporterService(this);
 		
 		connectAdb();
@@ -458,13 +500,13 @@ public class AccessSupporterService extends Service implements LocationListener,
 				synchronized(touchLock){
 					try{
 						if(prefs.getBoolean("change_denco",false)){
-							adbStream.write(touchChangeDencoCommand);
+							adbStream.write(adbCommand.getChangeDencoCommand());
 							Thread.sleep(1000);
 						}
 						
-						adbStream.write(touchAccessCommand);
+						adbStream.write(adbCommand.getAccessCommand());
 						Thread.sleep(7000);
-						adbStream.write(touchAccessCommand);
+						adbStream.write(adbCommand.getAccessCommand());
 						Thread.sleep(1000);
 						
 						

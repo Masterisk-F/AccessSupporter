@@ -18,12 +18,14 @@
         android:orientation="horizontal"
         android:clickable="true">
 
-        <Button
+        <ToggleButton
             android:id="@+id/notification"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="開始"/>
+            android:checked="false"
+            android:textOff="停止中"
+            android:textOn="動作中" />
 
         <Button
             android:id="@+id/launchEkimemo"
